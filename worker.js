@@ -134,7 +134,7 @@ async function onMessage (message, edited) {
     let startMsg = await fetch(startMsgUrl).then(r => r.text())
     return sendMessage({
       chat_id:message.chat.id,
-      text:startMsg,
+      text:startMsg
     })
   }
 
@@ -347,7 +347,7 @@ async function handleBlock(id){
 
   return sendMessage({
     chat_id: ADMIN_UID,
-    text: `UID: \`${id}\` 屏蔽成功`,
+    text: `UID: [${id}](tg://user?id=${id}) 屏蔽成功`,
     parse_mode: "MarkdownV2"
   })
 }
@@ -363,7 +363,7 @@ async function handleUnBlock(id){
 
   return sendMessage({
     chat_id: ADMIN_UID,
-    text:`UID: \`${id}\` 解除屏蔽成功`,
+    text:`UID: [${id}](tg://user?id=${id}) 解除屏蔽成功`,
     parse_mode: "MarkdownV2"
   })
 }
@@ -379,7 +379,7 @@ async function handleCheckBlock(id){
 
   return sendMessage({
     chat_id: ADMIN_UID,
-    text: `UID: \`${id}\` ` + (blocked ? '被屏蔽' : '没有被屏蔽'),
+    text: `UID: [${id}](tg://user?id=${id}) ` + (blocked ? '被屏蔽' : '没有被屏蔽'),
     parse_mode: "MarkdownV2"
   })
 }
@@ -394,7 +394,9 @@ async function handleInfo(id){
   let userInfo = await nfd.get('user-info-' + id, { type: "json" })
   return sendMessage({
     chat_id: ADMIN_UID,
-    text: `UID: \`${id}\`\n\`\`\`json\n${JSON.stringify(userInfo, null, 4)}\n\`\`\``,
+    text:
+`UID: [${id}](tg://user?id=${id})
+\`\`\`json\n${JSON.stringify(userInfo, null, 4)}\n\`\`\``,
     parse_mode: "MarkdownV2"
   })
 }
@@ -413,6 +415,7 @@ async function handleHelp(){
     text: 
 `使用方法：回复转发的消息，并发送回复消息
 指令：
+\`/start\` - 欢迎语
 \`/block [id]\` - 屏蔽 id 或是回复的消息对应的账号
 \`/unblock [id]\` - 解除屏蔽 [id] 或是回复的消息对应的账号
 \`/checkblock [id]\` - 检查 [id] 或是回复的消息对应的账号的屏蔽情况
