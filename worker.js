@@ -5,10 +5,10 @@ const ADMIN_UID = ENV_ADMIN_UID // your user id, get it from https://t.me/userna
 
 const NOTIFY_INTERVAL = 3600 * 1000;
 const fraudDb = 'https://raw.githubusercontent.com/LloydAsp/nfd/main/data/fraud.db';
-const notificationUrl = 'https://github.com/solaireh3/nfd/raw/refs/heads/main/data/notification.txt'
-const startMsgUrl = 'https://github.com/solaireh3/nfd/raw/refs/heads/main/data/startMessage.md';
+const notificationUrl = 'https://github.com/chenx-dust/nfd/raw/refs/heads/main/data/notification.txt'
+const startMsgUrl = 'https://github.com/chenx-dust/nfd/raw/refs/heads/main/data/startMessage.md';
 
-const enable_notification = true
+const enable_notification = false
 /**
  * Return url to telegram api, optionally with parameters added
  */
@@ -109,7 +109,7 @@ async function onMessage (message) {
     if(!message?.reply_to_message?.chat){
       return sendMessage({
         chat_id:ADMIN_UID,
-        text:'使用方法，回复转发的消息，并发送回复消息，或者`/block`、`/unblock`、`/checkblock`、`/info`等指令'
+        text:'使用方法：回复转发的消息，并发送回复消息，或者 `/block`、`/unblock`、`/checkblock`、`/info` 等指令'
       })
     }
     if(/^\/block$/.exec(message.text)){
@@ -169,7 +169,7 @@ async function handleNotify(message){
   if(await isFraud(chatId)){
     return sendMessage({
       chat_id: ADMIN_UID,
-      text:`检测到骗子，UID${chatId}`
+      text:`检测到骗子，UID ${chatId}`
     })
   }
   if(enable_notification){
@@ -197,7 +197,7 @@ async function handleBlock(message){
 
   return sendMessage({
     chat_id: ADMIN_UID,
-    text: `UID:${guestChantId}屏蔽成功`,
+    text: `UID: ${guestChantId} 屏蔽成功`,
   })
 }
 
@@ -209,7 +209,7 @@ async function handleUnBlock(message){
 
   return sendMessage({
     chat_id: ADMIN_UID,
-    text:`UID:${guestChantId}解除屏蔽成功`,
+    text:`UID: ${guestChantId} 解除屏蔽成功`,
   })
 }
 
@@ -220,7 +220,7 @@ async function checkBlock(message){
 
   return sendMessage({
     chat_id: ADMIN_UID,
-    text: `UID:${guestChantId}` + (blocked ? '被屏蔽' : '没有被屏蔽')
+    text: `UID: ${guestChantId} ` + (blocked ? '被屏蔽' : '没有被屏蔽')
   })
 }
 
