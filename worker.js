@@ -143,7 +143,7 @@ async function onMessage (message, edited) {
     if(message?.reply_to_message?.chat){
       guestChatId = await nfd.get('msg-map-' + message?.reply_to_message.message_id, { type: "json" })
     }
-    if (message.text.startsWith('/')){
+    if (!edited && message.text.startsWith('/')){
       let params = message.text.trim().replace(/ +/g, " ").split(' ')
       let id = guestChatId
       if (params.length >= 2){
