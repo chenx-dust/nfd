@@ -1,13 +1,7 @@
-蛤？我叫乌萨奇（Usagi），有什么话我将为您转达😎
-
-注意不要乱点指令，联系请说明来意，成功发送消息后不要重复发，并耐心等待回复，被误认为骚扰会被ban
-
-博客：https://xxxh.de 
-发卡网站：https://shop.xxxh.de
-频道：@Asukacute
-群组：@ikunvv
-影视服bot：@ikun_emby_bot
-音乐服bot：@iikun_bot
-
-
-
+Hi there 👋, here is PM bot of @chenx_dust .
+No ads, no spam, no fraud. Thank you!
+You can send private messages to me from now on.
+---
+你好 👋，这里是 @chenx_dust 的私聊机器人。
+请不要在此发送任何广告、骚扰和诈骗信息，谢谢合作。
+在这条消息后，你可以发送私聊给我了。
