@@ -10,7 +10,7 @@ const startMsgUrl = 'https://github.com/chenx-dust/nfd/raw/refs/heads/main/data/
 /**
  * Return url to telegram api, optionally with parameters added
  */
-function apiUrl (methodName, params = null) {
+function apiUrl(methodName, params = null) {
   let query = ''
   if (params) {
     query = '?' + new URLSearchParams(params).toString()
@@ -18,7 +18,7 @@ function apiUrl (methodName, params = null) {
   return `https://api.telegram.org/bot${TOKEN}/${methodName}${query}`
 }
 
-function requestTelegram(methodName, body, params = null){
+function requestTelegram(methodName, body, params = null) {
   console.log(JSON.stringify({
     "type": "request",
     "method": methodName,
@@ -29,41 +29,41 @@ function requestTelegram(methodName, body, params = null){
     .then(r => r.json())
 }
 
-function makeReqBody(body){
+function makeReqBody(body) {
   return {
-    method:'POST',
-    headers:{
-      'content-type':'application/json'
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
     },
-    body:JSON.stringify(body)
+    body: JSON.stringify(body)
   }
 }
 
-function sendMessage(msg = {}){
+function sendMessage(msg = {}) {
   return requestTelegram('sendMessage', makeReqBody(msg))
 }
 
-function copyMessage(msg = {}){
+function copyMessage(msg = {}) {
   return requestTelegram('copyMessage', makeReqBody(msg))
 }
 
-function forwardMessage(msg){
+function forwardMessage(msg) {
   return requestTelegram('forwardMessage', makeReqBody(msg))
 }
 
-function editMessageText(msg = {}){
+function editMessageText(msg = {}) {
   return requestTelegram('editMessageText', makeReqBody(msg))
 }
 
-function editMessageCaption(msg = {}){
+function editMessageCaption(msg = {}) {
   return requestTelegram('editMessageCaption', makeReqBody(msg))
 }
 
-function editMessageMedia(msg = {}){
+function editMessageMedia(msg = {}) {
   return requestTelegram('editMessageMedia', makeReqBody(msg))
 }
 
-function deleteMessage(msg = {}){
+function deleteMessage(msg = {}) {
   return requestTelegram('deleteMessage', makeReqBody(msg))
 }
 
@@ -87,7 +87,7 @@ addEventListener('fetch', event => {
  * Handle requests to WEBHOOK
  * https://core.telegram.org/bots/api#update
  */
-async function handleWebhook (event) {
+async function handleWebhook(event) {
   // Check secret
   if (event.request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== SECRET) {
     return new Response('Unauthorized', { status: 403 })
@@ -105,7 +105,7 @@ async function handleWebhook (event) {
  * Handle incoming Update
  * https://core.telegram.org/bots/api#update
  */
-async function onUpdate (update) {
+async function onUpdate(update) {
   console.log(JSON.stringify({
     type: "webhook",
     data: update
@@ -129,52 +129,73 @@ async function onUpdate (update) {
  * https://core.telegram.org/bots/api#message
  */
 
-async function onMessage (message, edited) {
-  if(message.text === '/start'){
+async function onMessage(message, edited) {
+  if (message.text === '/start') {
     let startMsg = await fetch(startMsgUrl).then(r => r.text())
     return sendMessage({
-      chat_id:message.chat.id,
-      text:startMsg
+      chat_id: message.chat.id,
+      text: startMsg
     })
   }
 
-  if(message.chat.id.toString() === ADMIN_UID){
+  if (message.chat.id.toString() === ADMIN_UID) {
+    if ('forward_origin' in message) {
+      if (message.forward_origin?.type == "user"){
+        if (message.forward_origin.sender_user.is_bot){
+          return sendMessage({
+            chat_id: ADMIN_UID,
+            text: "Bot 之间的相互聊天是被禁止的"
+          })
+        }
+        let id = message.forward_origin.sender_user.id
+        return handleInject(message, id)
+      } else {
+        return sendMessage({
+          chat_id: ADMIN_UID,
+          text: `不支持注入的转发消息类型：\`${message.forward_origin.type}\``,
+          parse_mode: "MarkdownV2"
+        })
+      }
+    }
     let guestChatId = null
-    if(message?.reply_to_message?.chat){
+    if (message?.reply_to_message?.chat) {
       guestChatId = await nfd.get('msg-map-' + message?.reply_to_message.message_id, { type: "json" })
     }
-    if (!edited && message.text.startsWith('/')){
+    if (!edited && message.text.startsWith('/')) {
       let params = message.text.trim().replace(/ +/g, " ").split(' ')
       let id = guestChatId
-      if (params.length >= 2){
+      if (params.length >= 2) {
         id = params[1]
       }
-      if(/^\/d$/.exec(params[0])){
+      if (/^\/d$/.exec(params[0])) {
         return handleDelete(message)
       }
-      else if(/^\/delete$/.exec(params[0])){
+      else if (/^\/delete$/.exec(params[0])) {
         return handleDelete(message)
       }
-      else if(/^\/block$/.exec(params[0])){
+      else if (/^\/block$/.exec(params[0])) {
         return handleBlock(id)
       }
-      else if(/^\/unblock$/.exec(params[0])){
+      else if (/^\/unblock$/.exec(params[0])) {
         return handleUnBlock(id)
       }
-      else if(/^\/checkblock$/.exec(params[0])){
+      else if (/^\/checkblock$/.exec(params[0])) {
         return handleCheckBlock(id)
       }
-      else if(/^\/info$/.exec(params[0])){
+      else if (/^\/info$/.exec(params[0])) {
         return handleInfo(id)
       }
-      else if(/^\/help$/.exec(params[0])){
+      else if (/^\/inject$/.exec(params[0])) {
+        return handleInject(message, id)
+      }
+      else if (/^\/help$/.exec(params[0])) {
         return handleHelp()
       }
       else {
         return handleDefault()
       }
     }
-    if(!message?.reply_to_message?.chat){
+    if (!message?.reply_to_message?.chat) {
       return handleDefault()
     }
     if (guestChatId == null) {
@@ -183,7 +204,7 @@ async function onMessage (message, edited) {
         text: "发送/编辑失败，可能是未记录的消息，或是回复了错误的消息"
       })
     }
-    if (edited){
+    if (edited) {
       let replyMessageId = await nfd.get('reply-msg-' + message.message_id, { type: "json" })
       let rtn = []
       if ('text' in message) {
@@ -257,23 +278,30 @@ async function onMessage (message, edited) {
   }
 }
 
-async function handleGuestMessage(message, edited){
+async function handleGuestMessage(message, edited) {
   let chatId = message.chat.id;
-  if ('from' in message){
+  if ('from' in message) {
     await nfd.put('user-info-' + chatId, JSON.stringify(message.from))
   }
   let isblocked = await nfd.get('isblocked-' + chatId, { type: "json" })
 
-  if(isblocked){
+  if (isblocked) {
     return sendMessage({
       chat_id: chatId,
-      text:'Your are blocked. 你被屏蔽了。'
+      text: 'Your are blocked. 你被屏蔽了。'
     })
   }
 
   let rtn = []
-  if (edited){
-    rtn.push(sendMessage({
+  if ('forward_origin' in message) {
+    rtn.push(await sendMessage({
+      chat_id: ADMIN_UID,
+      text: `以下为 ${getPrettyName(message.chat)} 转发的 \`${message.forward_origin.type}\` 消息：`,
+      parse_mode: "MarkdownV2"
+    }))
+  }
+  if (edited) {
+    rtn.push(await sendMessage({
       chat_id: ADMIN_UID,
       text: `对方修改了消息：`
     }))
@@ -284,19 +312,19 @@ async function handleGuestMessage(message, edited){
     message_id: message.message_id
   })
   rtn.push(forwardReq)
-  if(forwardReq.ok){
+  if (forwardReq.ok) {
     await nfd.put('msg-map-' + forwardReq.result.message_id, chatId)
   }
   return rtn
 }
 
-async function handleDelete(message){
+async function handleDelete(message) {
   let guestChatId = await nfd.get('msg-map-' + message?.reply_to_message.message_id, { type: "json" })
   let replyMessageId = await nfd.get('reply-msg-' + message?.reply_to_message.message_id, { type: "json" })
-  if(guestChatId == null || replyMessageId == null){
+  if (guestChatId == null || replyMessageId == null) {
     return sendMessage({
       chat_id: ADMIN_UID,
-      text:'删除失败，可能是未记录的消息，或是回复了错误的消息'
+      text: '删除失败，可能是未记录的消息，或是回复了错误的消息'
     })
   }
 
@@ -309,7 +337,7 @@ async function handleDelete(message){
   if (reply.ok) {
     rtn.push(await sendMessage({
       chat_id: ADMIN_UID,
-      text:'删除成功'
+      text: '删除成功'
     }))
     rtn.push(await deleteMessage({
       chat_id: ADMIN_UID,
@@ -322,7 +350,7 @@ async function handleDelete(message){
   } else {
     let send = await sendMessage({
       chat_id: ADMIN_UID,
-      text:`删除失败\n\`\`\`json\n${JSON.stringify(reply, null, 4)}\n\`\`\``,
+      text: `删除失败\n\`\`\`json\n${JSON.stringify(reply, null, 4)}\n\`\`\``,
       parse_mode: "MarkdownV2"
     })
     rtn.push(send)
@@ -330,17 +358,17 @@ async function handleDelete(message){
   return rtn
 }
 
-async function handleBlock(id){
-  if(id == null){
+async function handleBlock(id) {
+  if (id == null) {
     return sendMessage({
       chat_id: ADMIN_UID,
-      text:'未知 ID'
+      text: '未知 ID'
     })
   }
-  if(id === ADMIN_UID){
+  if (id === ADMIN_UID) {
     return sendMessage({
       chat_id: ADMIN_UID,
-      text:'不能屏蔽自己'
+      text: '不能屏蔽自己'
     })
   }
   await nfd.put('isblocked-' + id, true)
@@ -352,27 +380,27 @@ async function handleBlock(id){
   })
 }
 
-async function handleUnBlock(id){
-  if(id == null){
+async function handleUnBlock(id) {
+  if (id == null) {
     return sendMessage({
       chat_id: ADMIN_UID,
-      text:'未知 ID'
+      text: '未知 ID'
     })
   }
   await nfd.put('isblocked-' + id, false)
 
   return sendMessage({
     chat_id: ADMIN_UID,
-    text:`UID: [${id}](tg://user?id=${id}) 解除屏蔽成功`,
+    text: `UID: [${id}](tg://user?id=${id}) 解除屏蔽成功`,
     parse_mode: "MarkdownV2"
   })
 }
 
-async function handleCheckBlock(id){
-  if(id == null){
+async function handleCheckBlock(id) {
+  if (id == null) {
     return sendMessage({
       chat_id: ADMIN_UID,
-      text:'未知 ID'
+      text: '未知 ID'
     })
   }
   let blocked = await nfd.get('isblocked-' + id, { type: "json" })
@@ -384,24 +412,46 @@ async function handleCheckBlock(id){
   })
 }
 
-async function handleInfo(id){
-  if(id == null){
+async function handleInfo(id) {
+  if (id == null) {
     return sendMessage({
       chat_id: ADMIN_UID,
-      text:'未知 ID'
+      text: '未知 ID'
     })
   }
   let userInfo = await nfd.get('user-info-' + id, { type: "json" })
   return sendMessage({
     chat_id: ADMIN_UID,
     text:
-`UID: [${id}](tg://user?id=${id})
+      getPrettyName(userInfo) + ` UID: [${id}](tg://user?id=${id})
 \`\`\`json\n${JSON.stringify(userInfo, null, 4)}\n\`\`\``,
     parse_mode: "MarkdownV2"
   })
 }
 
-async function handleDefault(){
+async function handleInject(message, id) {
+  if (id == null) {
+    return sendMessage({
+      chat_id: ADMIN_UID,
+      text: '未知 ID'
+    })
+  }
+  if (id.toString() === ADMIN_UID){
+    return sendMessage({
+      chat_id: ADMIN_UID,
+      text: "注入您的 ID 是没有意义的"
+    })
+  }
+
+  await nfd.put('msg-map-' + message.message_id, id)
+  return sendMessage({
+    chat_id: ADMIN_UID,
+    text: `已注入 UID: [${id}](tg://user?id=${id})`,
+    parse_mode: "MarkdownV2"
+  })
+}
+
+async function handleDefault() {
   return sendMessage({
     chat_id: ADMIN_UID,
     text: '使用方法：回复转发的消息，并发送回复消息，使用 `/help` 了解更多指令',
@@ -409,13 +459,14 @@ async function handleDefault(){
   })
 }
 
-async function handleHelp(){
+async function handleHelp() {
   return sendMessage({
     chat_id: ADMIN_UID,
-    text: 
-`使用方法：回复转发的消息，并发送回复消息
+    text:
+      `使用方法：回复转发的消息，并发送回复消息
 指令：
 \`/start\` - 欢迎语
+\`/inject <id>\` - 注入 <id> 的对话以开始聊天（转发消息亦可以）
 \`/block [id]\` - 屏蔽 id 或是回复的消息对应的账号
 \`/unblock [id]\` - 解除屏蔽 [id] 或是回复的消息对应的账号
 \`/checkblock [id]\` - 检查 [id] 或是回复的消息对应的账号的屏蔽情况
@@ -426,11 +477,26 @@ async function handleHelp(){
   })
 }
 
+function getPrettyName(chat) {
+  let username = chat?.first_name
+  if ('last_name' in chat) {
+    username += " " + chat.last_name
+  }
+  if (username == "") {
+    username = chat.id.toString()
+  }
+  if ('username' in chat) {
+    return `[${username}](tg://user?id=${chat.id}) \\(@${chat.username}\\)`.replace('_', '\\_')
+  } else {
+    return `[${username}](tg://user?id=${chat.id})`.replace('_', '\\_')
+  }
+}
+
 /**
  * Set webhook to this worker's url
  * https://core.telegram.org/bots/api#setwebhook
  */
-async function registerWebhook (event, requestUrl, suffix, secret) {
+async function registerWebhook(event, requestUrl, suffix, secret) {
   // https://core.telegram.org/bots/api#setwebhook
   const webhookUrl = `${requestUrl.protocol}//${requestUrl.hostname}${suffix}`
   const r = await (await fetch(apiUrl('setWebhook', { url: webhookUrl, secret_token: secret }))).json()
@@ -441,7 +507,7 @@ async function registerWebhook (event, requestUrl, suffix, secret) {
  * Remove webhook
  * https://core.telegram.org/bots/api#setwebhook
  */
-async function unRegisterWebhook (event) {
+async function unRegisterWebhook(event) {
   const r = await (await fetch(apiUrl('setWebhook', { url: '' }))).json()
   return new Response('ok' in r && r.ok ? 'Ok' : JSON.stringify(r, null, 2))
 }
